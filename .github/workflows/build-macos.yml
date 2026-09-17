@@ -1,1 +1,43 @@
+name: Build macOS App e DMG
 
+"on":
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Imposta Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installa dipendenze
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install pyinstaller
+
+      - name: Compila l'app con PyInstaller
+        run: |
+          pyinstaller --windowed --onedir --name "CercaCodici" codici.py
+
+      - name: Crea il file .dmg
+        run: |
+          mkdir -p dist/dmg
+          cp -R "dist/CercaCodici.app" dist/dmg/
+          hdiutil create -volname "CercaCodici" \
+            -srcfolder dist/dmg \
+            -ov -format UDZO \
+            dist/CercaCodici.dmg
+
+      - name: Carica il DMG come artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CercaCodici-dmg
+          path: dist/CercaCodici.dmg
